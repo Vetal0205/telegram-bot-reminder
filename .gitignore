@@ -1,0 +1,12 @@
+*.idea/
+__pycache__/
+*.pyc
+**/.DS_Store
+**/__pycache__
+*.log
+*.pickle
+*.pid
+*.out
+.ipynb_checkpoints
+env/
+telegram-bot-reminder.sqlite.sqlite
