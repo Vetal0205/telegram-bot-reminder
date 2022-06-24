@@ -10,5 +10,6 @@ class Message(NamedTuple):
 # Db insert message structure
 class Task(NamedTuple):
     id: Optional[int]
-    datatime: str
+    date: str
+    time: str
     task: str

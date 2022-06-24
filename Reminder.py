@@ -12,10 +12,11 @@ def add_task(date: str, time: str, task: str) -> Task:
         "Task",
         {
             "title": task,
-            "task_time": " ".join(datetime)
+            "task_date": date,
+            "task_time": time
         }
     )
-    return Task(id=None, datatime=" ".join(datetime), task=task)
+    return Task(id=None, date=date, time=time, task=task)
 
 
 def del_task(row_id: int) -> None:
@@ -26,5 +27,5 @@ def get_all_tasks() -> List[Task]:
     cursor = DataBase.get_cursor()
     cursor.execute("SELECT * FROM Task ORDERED BY task_time ASC")
     rows = cursor.fetchall()
-    all_tasks = [Task(id=row[0], task=row[1], datatime=row[2]) for row in rows]
+    all_tasks = [Task(id=row[0], task=row[1], date=row[2], time=row[3]) for row in rows]
     return all_tasks
