@@ -25,14 +25,13 @@ class Form(StatesGroup):
     Date = State()
     Time = State()
     Insert = State()
-    Done = State()
-
 
 @dp.message_handler(commands=['cancel'], state='*')
 async def cancel_handler(message: Message, state: FSMContext):
     current_state = await state.get_state()
     if current_state is None:
         await message.reply('There are no actions to cancel.')
+        return
     logging.info('Cancelling state %r', current_state)
     await state.finish()
     await message.reply('Cancelled', reply_markup=ReplyKeyboardRemove())
@@ -83,6 +82,7 @@ async def process_simple_time(callback_query: CallbackQuery, callback_data: dict
             await callback_query.message.edit_text(
                 f"""Please check your inputs:\n\nTask: {data['Task']}\nDate: {data["Date"]}\nTime: {data['Time']}.\n
                 \nIf it is incorrect type /cancel and input again, otherwise /accept""")
+            await Form.next()
 
 
 @dp.message_handler(commands=['accept'], state=Form.Insert)
@@ -90,15 +90,16 @@ async def insertion_data_handler(message: Message, state: FSMContext):
     async with state.proxy() as data:
         try:
             task = Reminder.add_task(data['Date'], data['Time'], data['Task'])
-        except Exceptions.NotCorrectMessage as e:
+        except Exception as e:
+            await state.finish()
             await message.answer(str(e))
             return
-        answer_msg = (f"Added task:\n {task.task}\n"
-                      f"The date is set for {task.date}"
-                      f"The time is set for {task.time}")
-        await message.answer(answer_msg)
-        await Form.next()
-        await cancel_handler()
+    answer_msg = (f"Added task:\n{task.task}\n"
+                  f"The date is set for {task.date}\n"
+                  f"The time is set for {task.time}")
+    await message.answer(answer_msg)
+    await state.finish()
+
 
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
