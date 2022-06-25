@@ -39,7 +39,7 @@ class Db:
         self.cursor.execute(f"DELETE FROM {table} WHERE id = ?", (row_id,))
         self.conn.commit()
 
-    def fetchall(self, table: str, columns: List[str]) -> List:
+    def fetch(self, table: str, columns: List[str]) -> List:
         columns_joined = ", ".join(columns)
         self.cursor.execute(f"SELECT {columns_joined} FROM {table}")
         rows = self.cursor.fetchall()
