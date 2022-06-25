@@ -105,11 +105,21 @@ async def insertion_data_handler(message: Message, state: FSMContext):
 async def get_all_tasks(message: Message):
     recent_tasks = Reminder.get_all_tasks()
     if not recent_tasks:
-        await message.answer("You don`t have any tasks now")
+        await message.answer("[#] You don`t have any tasks now [#]")
         return
     recent_tasks_rows = [f"Task: {task.task} on {task.date} {task.time}\nPress /del{task.id} to delete" for task in recent_tasks]
     answer_message = "\n\n".join(recent_tasks_rows)
     await message.answer(answer_message)
+
+
+@dp.message_handler(lambda message: message.text.startswith('/del'))
+async def del_task(message: Message):
+    row_id = message.text
+    try:
+        Reminder.del_task(row_id)
+    except Exceptions.NotCorrectMessage as e:
+        print(str(e))
+    await message.answer("[#] Deleted [#]")
 
 
 if __name__ == '__main__':
