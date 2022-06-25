@@ -24,8 +24,7 @@ def del_task(row_id: int) -> None:
 
 
 def get_all_tasks() -> List[Task]:
-    cursor = DataBase.get_cursor()
-    cursor.execute("SELECT * FROM Task ORDERED BY task_time ASC")
-    rows = cursor.fetchall()
+    rows = DataBase.fetch("Task", ["id", "title", "task_date", "task_time"])
     all_tasks = [Task(id=row[0], task=row[1], date=row[2], time=row[3]) for row in rows]
     return all_tasks
+
