@@ -42,6 +42,6 @@ class Db:
 
     def fetch(self, table: str, columns: List[str]) -> List:
         columns_joined = ", ".join(columns)
-        self.cursor.execute(f"SELECT {columns_joined} FROM {table}")
+        self.cursor.execute(f"SELECT {columns_joined} FROM {table} ORDER BY task_date, task_time DESC")
         rows = self.cursor.fetchall()
         return rows
