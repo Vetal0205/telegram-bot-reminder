@@ -101,5 +101,16 @@ async def insertion_data_handler(message: Message, state: FSMContext):
     await state.finish()
 
 
+@dp.message_handler(commands=['tasks'])
+async def get_all_tasks(message: Message):
+    recent_tasks = Reminder.get_all_tasks()
+    if not recent_tasks:
+        await message.answer("You don`t have any tasks now")
+        return
+    recent_tasks_rows = [f"Task: {task.task} on {task.date} {task.time}\nPress /del{task.id} to delete" for task in recent_tasks]
+    answer_message = "\n\n".join(recent_tasks_rows)
+    await message.answer(answer_message)
+
+
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
