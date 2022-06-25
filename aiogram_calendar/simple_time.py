@@ -1,9 +1,10 @@
 import datetime
 import calendar
+import Exceptions
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.utils.callback_data import CallbackData
 from aiogram.types import CallbackQuery
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date, time
 
 time_callback = CallbackData('simple_time', 'action', 'hour', 'minute')
 calendar_callback = CallbackData('simple_calendar', 'act', 'year', 'month', 'day')
@@ -112,7 +113,11 @@ class SimpleDateTime:
         # user picked a day button, return date
         if data['act'] == "DAY":
             await query.message.delete_reply_markup()  # removing inline keyboard
-            return_data = True, datetime(int(data['year']), int(data['month']), int(data['day']))
+            user_date = date(int(data['year']), int(data['month']), int(data['day']))
+            current_date = date.today()
+            if current_date > user_date:
+                raise Exceptions.IncorrectDateTime("You should only select future dates!")
+            return_data = True, user_date
             # await query.message.edit_reply_markup(await self.start_hour())
         # user navigates to previous year, editing message with new calendar
         if data['act'] == "PREV-YEAR":
@@ -140,12 +145,13 @@ class SimpleDateTime:
             hour = data['hour']
             await query.message.edit_reply_markup(await self.start_minute(hour=hour))
         if data['action'] == 'MINUTE':
-            minutes = data['minute']
-            hour = data['hour']
+            user_time = time(int(data['hour']), int(data['minute']), 0, 0)
+            current_time = time.fromisoformat(datetime.now().strftime("%H:%M"))
+            if current_time > user_time:
+                raise Exceptions.IncorrectDateTime("You should only select future time!")
             await query.message.delete_reply_markup()
-            return_data = True, ":".join([hour, minutes])
+            return_data = True, ":".join([data['hour'], data['minute']])
 
         return return_data
-
 
 #

@@ -26,6 +26,7 @@ class Form(StatesGroup):
     Time = State()
     Insert = State()
 
+
 @dp.message_handler(commands=['cancel'], state='*')
 async def cancel_handler(message: Message, state: FSMContext):
     current_state = await state.get_state()
@@ -62,28 +63,33 @@ async def task_handler(message: Message, state: FSMContext):
 # simple calendar usage
 @dp.callback_query_handler(calendar_callback.filter(), state=Form.Date)
 async def process_simple_calendar(callback_query: CallbackQuery, callback_data: dict, state: FSMContext):
-    selected, date = await SimpleDateTime().process_selection_calendar(callback_query, callback_data)
-    if selected:
-        async with state.proxy() as data:
-            data['Date'] = date.strftime("%d/%m/%Y")
-        await Form.next()
-        await callback_query.message.edit_text(
-            f'You selected {date.strftime("%d/%m/%Y")}\nPlease select a time:',
-            reply_markup=await SimpleDateTime().start_hour()
-        )
+    try:
+        selected, date = await SimpleDateTime().process_selection_calendar(callback_query, callback_data)
+        if selected:
+            async with state.proxy() as data:
+                data['Date'] = date.strftime("%d/%m/%Y")
+            await Form.next()
+            await callback_query.message.edit_text(
+                f'You selected {date.strftime("%d/%m/%Y")}\nPlease select a time:',
+                reply_markup=await SimpleDateTime().start_hour()
+            )
+    except Exceptions.IncorrectDateTime as e:
+        await callback_query.message.answer(str(e), reply_markup=await SimpleDateTime().start_calendar())
 
 
 @dp.callback_query_handler(time_callback.filter(), state=Form.Time)
 async def process_simple_time(callback_query: CallbackQuery, callback_data: dict, state: FSMContext):
-    selected, time = await SimpleDateTime().process_selection_time(callback_query, callback_data)
-    if selected:
-        async with state.proxy() as data:
-            data['Time'] = time
-            await callback_query.message.edit_text(
-                f"""Please check your inputs:\n\nTask: {data['Task']}\nDate: {data["Date"]}\nTime: {data['Time']}.\n
-                \nIf it is incorrect type /cancel and input again, otherwise /accept""")
-            await Form.next()
-
+    try:
+        selected, time = await SimpleDateTime().process_selection_time(callback_query, callback_data)
+        if selected:
+            async with state.proxy() as data:
+                data['Time'] = time
+                await callback_query.message.edit_text(
+                    f"""Please check your inputs:\n\nTask: {data['Task']}\nDate: {data["Date"]}\nTime: {data['Time']}.\n
+                    \nIf it is incorrect type /cancel and input again, otherwise /accept""")
+                await Form.next()
+    except Exceptions.IncorrectDateTime as e:
+        await callback_query.message.answer(str(e), reply_markup=await SimpleDateTime().start_hour())
 
 @dp.message_handler(commands=['accept'], state=Form.Insert)
 async def insertion_data_handler(message: Message, state: FSMContext):
@@ -107,7 +113,8 @@ async def get_all_tasks(message: Message):
     if not recent_tasks:
         await message.answer("[#] You don`t have any tasks now [#]")
         return
-    recent_tasks_rows = [f"Task: {task.task} on {task.date} {task.time}\nPress /del{task.id} to delete" for task in recent_tasks]
+    recent_tasks_rows = [f"Task: {task.task} on {task.date} {task.time}\nPress /del{task.id} to delete" for task in
+                         recent_tasks]
     answer_message = "\n\n".join(recent_tasks_rows)
     await message.answer(answer_message)
 
