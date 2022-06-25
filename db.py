@@ -37,6 +37,7 @@ class Db:
     def delete_row(self, table: str, row_id: int) -> None:
         row_id = int(row_id)
         self.cursor.execute(f"DELETE FROM {table} WHERE id = ?", (row_id,))
+        self.cursor.execute(f"DELETE FROM sqlite_sequence WHERE id = ?", (row_id,))
         self.conn.commit()
 
     def fetch(self, table: str, columns: List[str]) -> List:
