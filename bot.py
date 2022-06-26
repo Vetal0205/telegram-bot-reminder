@@ -21,7 +21,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 bot = Bot(token=API_TOKEN)
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
-dp.middleware.setup(AccessMiddleware(ACCESS_ID))
+dp.middleware.setup(AccessMiddleware(730533953))
 
 class Form(StatesGroup):
     Task = State()
