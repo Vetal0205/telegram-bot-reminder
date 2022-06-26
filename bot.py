@@ -3,6 +3,7 @@ import os
 import logging
 import Reminder
 import Exceptions
+from midlewares import AccessMiddleware
 from aiogram.utils import executor
 from aiogram import Bot, Dispatcher
 from aiogram.dispatcher import FSMContext
@@ -12,6 +13,7 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram_calendar import SimpleDateTime, callback
 
 API_TOKEN = os.getenv("TELEGRAM_API_TOKEN")
+ACCESS_ID = os.getenv("TELEGRAM_ACCESS_ID")
 # Configure logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%m.%d.%Y %a %H:%M:%S', level=logging.INFO)
 # Initialize bot and dispatcher
@@ -19,7 +21,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 bot = Bot(token=API_TOKEN)
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
-
+dp.middleware.setup(AccessMiddleware(ACCESS_ID))
 
 class Form(StatesGroup):
     Task = State()
