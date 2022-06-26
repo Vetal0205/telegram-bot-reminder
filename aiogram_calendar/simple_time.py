@@ -6,8 +6,7 @@ from aiogram.utils.callback_data import CallbackData
 from aiogram.types import CallbackQuery
 from datetime import datetime, timedelta, date, time
 
-time_callback = CallbackData('simple_time', 'action', 'hour', 'minute')
-calendar_callback = CallbackData('simple_calendar', 'act', 'year', 'month', 'day')
+callback = CallbackData('simple_calendar', 'act', 'year', 'month', 'day', 'hour', 'minute')
 
 
 class SimpleDateTime:
@@ -23,12 +22,12 @@ class SimpleDateTime:
         :return: Returns InlineKeyboardMarkup object with the calendar.
         """
         inline_kb = InlineKeyboardMarkup(row_width=7)
-        ignore_callback = calendar_callback.new("IGNORE", year, month, 0)  # for buttons with no answer
+        ignore_callback = callback.new("IGNORE", year, month, 0, 0, 0)  # for buttons with no answer
         # First row - Month and Year
         inline_kb.row()
         inline_kb.insert(InlineKeyboardButton(
             "<<",
-            callback_data=calendar_callback.new("PREV-YEAR", year, month, 1)
+            callback_data=callback.new("PREV-YEAR", year, month, 1, 0, 0)
         ))
         inline_kb.insert(InlineKeyboardButton(
             f'{calendar.month_name[month]} {str(year)}',
@@ -36,7 +35,7 @@ class SimpleDateTime:
         ))
         inline_kb.insert(InlineKeyboardButton(
             ">>",
-            callback_data=calendar_callback.new("NEXT-YEAR", year, month, 1)
+            callback_data=callback.new("NEXT-YEAR", year, month, 1, 0, 0)
         ))
         # Second row - Week Days
         inline_kb.row()
@@ -52,24 +51,23 @@ class SimpleDateTime:
                     inline_kb.insert(InlineKeyboardButton(" ", callback_data=ignore_callback))
                     continue
                 inline_kb.insert(InlineKeyboardButton(
-                    str(day), callback_data=calendar_callback.new("DAY", year, month, day)
+                    str(day), callback_data=callback.new("DAY", year, month, day, 0, 0)
                 ))
 
         # Last row - Buttons
         inline_kb.row()
         inline_kb.insert(InlineKeyboardButton(
-            "<", callback_data=calendar_callback.new("PREV-MONTH", year, month, day)
+            "<", callback_data=callback.new("PREV-MONTH", year, month, day, 0, 0)
         ))
         inline_kb.insert(InlineKeyboardButton(" ", callback_data=ignore_callback))
         inline_kb.insert(InlineKeyboardButton(
-            ">", callback_data=calendar_callback.new("NEXT-MONTH", year, month, day)
+            ">", callback_data=callback.new("NEXT-MONTH", year, month, day, 0, 0)
         ))
 
         return inline_kb
 
-    async def start_hour(self) -> InlineKeyboardMarkup:
+    async def start_hour(self, year: int, month: int, day: int) -> InlineKeyboardMarkup:
         inline_kb = InlineKeyboardMarkup(row_width=6)
-        ignore_callback = time_callback.new("IGNORE", 0, 0)
         inline_kb.row()
         time_matrix = \
             [
@@ -82,12 +80,12 @@ class SimpleDateTime:
             inline_kb.row()
             for time in row:
                 inline_kb.insert(InlineKeyboardButton(
-                    time, callback_data=time_callback.new("HOUR", time[:2], 0)  # sporno
+                    time, callback_data=callback.new("HOUR", year, month, day, time[:2], 0)
                 ))
         inline_kb.row()
         return inline_kb
 
-    async def start_minute(self, hour: str = '00') -> InlineKeyboardMarkup:
+    async def start_minute(self, year: int, month: int, day: int, hour: str) -> InlineKeyboardMarkup:
         inline_kb = InlineKeyboardMarkup(row_width=4)
         minutes = \
             [
@@ -100,7 +98,7 @@ class SimpleDateTime:
             for minute in row:
                 time = hour + minute
                 inline_kb.insert(InlineKeyboardButton(
-                    time, callback_data=time_callback.new("MINUTE", time[:2], time[3:])
+                    time, callback_data=callback.new("MINUTE", year, month, day, time[:2], time[3:])
                 ))
         return inline_kb
 
@@ -113,12 +111,11 @@ class SimpleDateTime:
         # user picked a day button, return date
         if data['act'] == "DAY":
             await query.message.delete_reply_markup()  # removing inline keyboard
-            user_date = date(int(data['year']), int(data['month']), int(data['day']))
+            user_date = (int(data['year']), int(data['month']), int(data['day']))
             current_date = date.today()
-            if current_date > user_date:
+            if current_date > date(int(data['year']), int(data['month']), int(data['day'])):
                 raise Exceptions.IncorrectDateTime("You should only select future dates!")
             return_data = True, user_date
-            # await query.message.edit_reply_markup(await self.start_hour())
         # user navigates to previous year, editing message with new calendar
         if data['act'] == "PREV-YEAR":
             prev_date = temp_date - timedelta(days=365)
@@ -135,19 +132,23 @@ class SimpleDateTime:
         if data['act'] == "NEXT-MONTH":
             next_date = temp_date + timedelta(days=31)
             await query.message.edit_reply_markup(await self.start_calendar(int(next_date.year), int(next_date.month)))
-        # at some point user clicks DAY button, returning date
         return return_data
 
     async def process_selection_time(self, query: CallbackQuery, data: CallbackData) -> tuple:
         return_data = (False, None)
         # actions for time selection
-        if data['action'] == 'HOUR':
+        if data['act'] == 'HOUR':
             hour = data['hour']
-            await query.message.edit_reply_markup(await self.start_minute(hour=hour))
-        if data['action'] == 'MINUTE':
-            user_time = time(int(data['hour']), int(data['minute']), 0, 0)
-            current_time = time.fromisoformat(datetime.now().strftime("%H:%M"))
-            if current_time > user_time:
+            year, month, day = data['year'], data['month'], data['day']
+            await query.message.edit_reply_markup(await self.start_minute(year, month, day, hour=hour))
+        if data['act'] == 'MINUTE':
+            cur_datetime = datetime.today()
+            user_datetime = datetime(int(data['year']),
+                                     int(data['month']),
+                                     int(data['day']),
+                                     int(data['hour']),
+                                     int(data['minute']))
+            if cur_datetime > user_datetime:
                 raise Exceptions.IncorrectDateTime("You should only select future time!")
             await query.message.delete_reply_markup()
             return_data = True, ":".join([data['hour'], data['minute']])

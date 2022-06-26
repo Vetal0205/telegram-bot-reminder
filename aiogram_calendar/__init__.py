@@ -1,1 +1,1 @@
-from aiogram_calendar.simple_time import calendar_callback, SimpleDateTime, time_callback
+from aiogram_calendar.simple_time import callback, SimpleDateTime

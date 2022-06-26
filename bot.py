@@ -1,3 +1,4 @@
+import datetime
 import os
 import logging
 import Reminder
@@ -8,7 +9,7 @@ from aiogram.dispatcher import FSMContext
 from aiogram.types import Message, CallbackQuery, ReplyKeyboardMarkup, ReplyKeyboardRemove
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher.filters.state import State, StatesGroup
-from aiogram_calendar import SimpleDateTime, calendar_callback, time_callback
+from aiogram_calendar import SimpleDateTime, callback
 
 API_TOKEN = os.getenv("TELEGRAM_API_TOKEN")
 # Configure logging
@@ -61,23 +62,25 @@ async def task_handler(message: Message, state: FSMContext):
 
 
 # simple calendar usage
-@dp.callback_query_handler(calendar_callback.filter(), state=Form.Date)
+@dp.callback_query_handler(callback.filter(), state=Form.Date)
 async def process_simple_calendar(callback_query: CallbackQuery, callback_data: dict, state: FSMContext):
     try:
         selected, date = await SimpleDateTime().process_selection_calendar(callback_query, callback_data)
         if selected:
             async with state.proxy() as data:
+                year, month, day = date
+                date = datetime.date(year,month,day)
                 data['Date'] = date.strftime("%d/%m/%Y")
             await Form.next()
             await callback_query.message.edit_text(
                 f'You selected {date.strftime("%d/%m/%Y")}\nPlease select a time:',
-                reply_markup=await SimpleDateTime().start_hour()
+                reply_markup=await SimpleDateTime().start_hour(year, month, day)
             )
     except Exceptions.IncorrectDateTime as e:
         await callback_query.message.answer(str(e), reply_markup=await SimpleDateTime().start_calendar())
 
 
-@dp.callback_query_handler(time_callback.filter(), state=Form.Time)
+@dp.callback_query_handler(callback.filter(), state=Form.Time)
 async def process_simple_time(callback_query: CallbackQuery, callback_data: dict, state: FSMContext):
     try:
         selected, time = await SimpleDateTime().process_selection_time(callback_query, callback_data)
